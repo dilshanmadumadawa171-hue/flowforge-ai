@@ -1,44 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>FlowForge AI Studio</title>
+
+<style>
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  background:#08090d;
+  color:#fff;
+  font-family:Arial,sans-serif;
+}
+
+.app{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+/* HEADER */
+
+.header{
+  height:60px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 18px;
+  background:#101118;
+  border-bottom:1px solid #292b36;
+}
+
+.logo{
+  font-size:21px;
+  font-weight:bold;
+}
+
+.logo span{
+  color:#806cff;
+}
+
+.ratioTop{
+  color:#aaa;
+  font-size:14px;
+}
+
+/* MAIN */
+
+.main{
+  flex:1;
+  display:grid;
+  grid-template-columns:200px 1fr 300px;
+  min-height:calc(100vh - 220px);
+}
+
+/* LEFT */
+
+.left{
+  background:#0e1016;
+  border-right:1px solid #292b36;
+  padding:15px;
+}
+
+.scene{
+  padding:12px;
+  margin-bottom:10px;
+  background:#211d3b;
+  border:1px solid #393260;
+  border-radius:9px;
+  font-size:13px;
+}
+
+.add{
+  width:100%;
+  padding:11px;
+  background:#171923;
+  color:#fff;
+  border:1px solid #343642;
+  border-radius:8px;
+}
+
+/* CENTER */
+
+.center{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+
+.videoBox{
+  width:min(330px,80vw);
+  aspect-ratio:9/16;
+  background:radial-gradient(circle,#443a63,#11131b);
+  border:1px solid #363747;
+  border-radius:16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  box-shadow:0 15px 50px rgba(0,0,0,.5);
+}
+
+.videoBox video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.play{
+  width:65px;
+  height:65px;
+  border-radius:50%;
+  background:#7869ff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:25px;
+}
+
+/* RIGHT */
+
+.right{
+  background:#0e1016;
+  border-left:1px solid #292b36;
+  padding:18px;
+}
+
+.title{
+  font-size:18px;
+  font-weight:bold;
+}
+
+.label{
+  display:block;
+  margin-top:16px;
+  margin-bottom:6px;
+  color:#999;
+  font-size:11px;
+}
+
+textarea,
+select{
+  width:100%;
+  background:#090a0f;
+  color:#fff;
+  border:1px solid #343642;
+  border-radius:9px;
+  padding:11px;
+}
+
+textarea{
+  height:150px;
+  resize:vertical;
+}
+
+select{
+  height:42px;
+}
+
+.generate{
+  width:100%;
+  margin-top:18px;
+  padding:14px;
+  background:#7869ff;
+  color:#fff;
+  border:0;
+  border-radius:9px;
+  font-weight:bold;
+  font-size:15px;
+}
+
+.generate:disabled{
+  opacity:.5;
+}
+
+.status{
+  margin-top:10px;
+  color:#aaa;
+  font-size:11px;
+  line-height:1.5;
+}
+
+.result{
+  margin-top:12px;
+  padding:10px;
+  background:#151720;
+  border:1px solid #30323d;
+  border-radius:8px;
+  font-size:12px;
+  word-break:break-word;
+}
+
+/* TIMELINE */
+
+.timeline{
+  height:160px;
+  background:#0e1016;
+  border-top:1px solid #292b36;
+  padding:12px 18px;
+}
+
+.track{
+  margin-top:8px;
+  height:105px;
+  background:#090a0f;
+  border:1px solid #292b36;
+  border-radius:9px;
+  padding:10px;
+  overflow-x:auto;
+}
+
+.clips{
+  display:flex;
+  gap:8px;
+}
+
+.clip{
+  min-width:140px;
+  padding:12px;
+  background:#211d3b;
+  border:1px solid #41386b;
+  border-radius:8px;
+  font-size:11px;
+}
+
+/* MOBILE */
+
 @media(max-width:800px){
 
-  .app{
+  .main{
     display:flex;
     flex-direction:column;
-    min-height:100vh;
+    min-height:auto;
   }
 
   .left{
     display:none;
   }
 
-  .center{
-    display:block;
-    height:auto;
-    min-height:70vh;
-    padding:12px;
-  }
-
-  .canvas{
-    height:auto;
-    min-height:60vh;
-  }
-
-  .video{
-    height:60vh;
-    max-height:520px;
-  }
-
   .right{
-    display:block;
-    width:100%;
+    order:1;
     border-left:0;
-    border-top:1px solid #252731;
-    padding:15px;
+    border-top:1px solid #292b36;
+    padding:16px;
+  }
+
+  .center{
+    order:0;
+    padding:20px 10px;
+    min-height:500px;
+  }
+
+  .videoBox{
+    width:min(300px,82vw);
   }
 
   .timeline{
-    display:block;
-    width:100%;
-    border-top:1px solid #252731;
+    height:140px;
+  }
+
+  .track{
+    height:85px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<header class="header">
+  <div class="logo">
+    Flow<span>Forge</span> AI
+  </div>
+
+  <div class="ratioTop" id="ratioTop">
+    9:16
+  </div>
+</header>
+
+
+<div class="main">
+
+<!-- LEFT -->
+
+<aside class="left">
+
+  <div class="scene">
+    🎬 Scene 01 · 10s
+  </div>
+
+  <button class="add" onclick="addScene()">
+    ＋ Add Scene
+  </button>
+
+</aside>
+
+
+<!-- CENTER -->
+
+<main class="center">
+
+  <div class="videoBox" id="videoBox">
+
+    <div class="play">
+      ▶
+    </div>
+
+  </div>
+
+</main>
+
+
+<!-- RIGHT -->
+
+<aside class="right">
+
+  <div class="title">
+    ✦ AI Director
+  </div>
+
+
+  <label class="label">
+    PROMPT
+  </label>
+
+  <textarea id="prompt">Create a short cinematic scene of a cute 3D cartoon bunny happily jumping in a colorful magical garden.</textarea>
+
+
+  <label class="label">
+    DURATION
+  </label>
+
+  <select id="duration">
+
+    <option value="5">
+      5 seconds
+    </option>
+
+    <option value="10" selected>
+      10 seconds
+    </option>
+
+    <option value="15">
+      15 seconds
+    </option>
+
+  </select>
+
+
+  <label class="label">
+    ASPECT RATIO
+  </label>
+
+  <select id="ratio" onchange="updateRatio()">
+
+    <option value="9:16" selected>
+      9:16
+    </option>
+
+    <option value="16:9">
+      16:9
+    </option>
+
+    <option value="1:1">
+      1:1
+    </option>
+
+  </select>
+
+
+  <button
+    class="generate"
+    id="generateBtn"
+    onclick="generate()">
+
+    ✦ Generate Scene
+
+  </button>
+
+
+  <div
+    class="status"
+    id="status">
+
+    Connecting to FlowForge backend...
+
+  </div>
+
+
+  <div
+    class="result"
+    id="result"
+    style="display:none">
+
+  </div>
+
+</aside>
+
+</div>
+
+
+<!-- TIMELINE -->
+
+<section class="timeline">
+
+  <div>
+    🎬 Timeline
+  </div>
+
+  <div class="track">
+
+    <div
+      class="clips"
+      id="clips">
+
+      <div class="clip">
+        Scene 01 · 10s
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+</div>
+
+
+<script>
+
+/* BACKEND */
+
+const API =
+  "https://flowforge-backend-42rl.onrender.com";
+
+let sceneNumber = 1;
+
+
+/* BACKEND CHECK */
+
+async function checkBackend(){
+
+  const status =
+    document.getElementById("status");
+
+  try{
+
+    const response =
+      await fetch(API + "/health");
+
+    if(!response.ok){
+
+      throw new Error("Backend unavailable");
+
+    }
+
+    const data =
+      await response.json();
+
+    if(data.ok){
+
+      status.textContent =
+        "Backend: ONLINE ✓";
+
+    }else{
+
+      status.textContent =
+        "Backend: ONLINE";
+
+    }
+
+  }catch(error){
+
+    status.textContent =
+      "Backend: connection failed";
+
   }
 
 }
+
+
+/* GENERATE */
+
+async function generate(){
+
+  const button =
+    document.getElementById("generateBtn");
+
+  const status =
+    document.getElementById("status");
+
+  const result =
+    document.getElementById("result");
+
+  const prompt =
+    document.getElementById("prompt")
+    .value
+    .trim();
+
+  const duration =
+    Number(
+      document.getElementById("duration")
+      .value
+    );
+
+  const aspectRatio =
+    document.getElementById("ratio")
+    .value;
+
+
+  if(!prompt){
+
+    status.textContent =
+      "Please enter a prompt.";
+
+    return;
+
+  }
+
+
+  button.disabled = true;
+
+  result.style.display =
+    "none";
+
+  status.textContent =
+    "Sending request...";
+
+
+  try{
+
+    const response =
+      await fetch(
+        API + "/api/generate",
+        {
+          method:"POST",
+
+          headers:{
+            "Content-Type":
+              "application/json"
+          },
+
+          body:JSON.stringify({
+
+            prompt:prompt,
+
+            duration:duration,
+
+            aspectRatio:aspectRatio
+
+          })
+
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if(!response.ok){
+
+      throw new Error(
+        data.error ||
+        "Request failed"
+      );
+
+    }
+
+
+    status.textContent =
+      "Job created ✓ Processing...";
+
+
+    pollJob(data.jobId);
+
+
+  }catch(error){
+
+    status.textContent =
+      "Error: " + error.message;
+
+    button.disabled = false;
+
+  }
+
+}
+
+
+/* CHECK JOB */
+
+async function pollJob(jobId){
+
+  const status =
+    document.getElementById("status");
+
+  const button =
+    document.getElementById("generateBtn");
+
+  const result =
+    document.getElementById("result");
+
+
+  try{
+
+    const response =
+      await fetch(
+        API +
+        "/api/generate/" +
+        jobId
+      );
+
+
+    const job =
+      await response.json();
+
+
+    if(job.status === "completed"){
+
+      status.textContent =
+        "Generation completed ✓";
+
+
+      if(job.generatedText){
+
+        result.style.display =
+          "block";
+
+        result.innerHTML =
+          "<b>AI Result</b><br><br>" +
+          escapeHtml(
+            job.generatedText
+          );
+
+      }
+
+
+      if(job.videoUrl){
+
+        showVideo(
+          job.videoUrl
+        );
+
+      }
+
+
+      addGeneratedScene();
+
+      button.disabled =
+        false;
+
+      return;
+
+    }
+
+
+    if(job.status === "failed"){
+
+      status.textContent =
+        "Generation failed: " +
+        (job.error ||
+        "Unknown error");
+
+      button.disabled =
+        false;
+
+      return;
+
+    }
+
+
+    status.textContent =
+      "AI processing...";
+
+
+    setTimeout(
+      function(){
+
+        pollJob(jobId);
+
+      },
+      1500
+    );
+
+
+  }catch(error){
+
+    status.textContent =
+      "Checking job...";
+
+    setTimeout(
+      function(){
+
+        pollJob(jobId);
+
+      },
+      2500
+    );
+
+  }
+
+}
+
+
+/* SHOW VIDEO */
+
+function showVideo(url){
+
+  const box =
+    document.getElementById(
+      "videoBox"
+    );
+
+  box.innerHTML = "";
+
+  const video =
+    document.createElement(
+      "video"
+    );
+
+  video.src = url;
+
+  video.controls = true;
+
+  video.playsInline = true;
+
+  box.appendChild(video);
+
+}
+
+
+/* ADD GENERATED SCENE */
+
+function addGeneratedScene(){
+
+  sceneNumber++;
+
+  const duration =
+    document.getElementById(
+      "duration"
+    ).value;
+
+  const clip =
+    document.createElement(
+      "div"
+    );
+
+  clip.className =
+    "clip";
+
+  clip.textContent =
+    "Scene " +
+    String(sceneNumber)
+    .padStart(2,"0") +
+    " · " +
+    duration +
+    "s";
+
+  document
+    .getElementById("clips")
+    .appendChild(clip);
+
+}
+
+
+/* ADD EMPTY SCENE */
+
+function addScene(){
+
+  sceneNumber++;
+
+  const clip =
+    document.createElement(
+      "div"
+    );
+
+  clip.className =
+    "clip";
+
+  clip.textContent =
+    "Scene " +
+    String(sceneNumber)
+    .padStart(2,"0") +
+    " · 10s";
+
+  document
+    .getElementById("clips")
+    .appendChild(clip);
+
+}
+
+
+/* RATIO */
+
+function updateRatio(){
+
+  const ratio =
+    document.getElementById(
+      "ratio"
+    ).value;
+
+  document.getElementById(
+    "ratioTop"
+  ).textContent =
+    ratio;
+
+}
+
+
+/* SAFE TEXT */
+
+function escapeHtml(text){
+
+  return String(text)
+
+    .replace(/&/g,"&amp;")
+
+    .replace(/</g,"&lt;")
+
+    .replace(/>/g,"&gt;")
+
+    .replace(/\n/g,"<br>");
+
+}
+
+
+/* START */
+
+checkBackend();
+
+</script>
+
+</body>
+</html>
