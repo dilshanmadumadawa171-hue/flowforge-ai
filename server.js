@@ -36,22 +36,67 @@ app.post('/api/generate', (req, res) => {
 
   jobs.set(id, job);
 
-  // Test mode: simulate a provider job.
-  setTimeout(() => {
-    const current = jobs.get(id);
-    if (!current) return;
-    current.status = 'processing';
-    jobs.set(id, current);
-  }, 800);
+// Gemini AI generation
+setTimeout(async () => {
+  const current = jobs.get(id);
+  if (!current) return;
 
-  setTimeout(() => {
-    const current = jobs.get(id);
-    if (!current) return;
+  current.status = 'processing';
+  jobs.set(id, current);
+
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY is not configured');
+    }
+
+    const response = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt.trim()
+                }
+              ]
+            }
+          ]
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.error?.message || 'Gemini API request failed'
+      );
+    }
+
+    const generatedText =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
     current.status = 'completed';
-    current.videoUrl = null; // Real provider URL will be stored here later.
+    current.videoUrl = null;
+    current.generatedText = generatedText;
     jobs.set(id, current);
-  }, 2500);
 
+  } catch (error) {
+    console.error('Gemini error:', error);
+
+    current.status = 'failed';
+    current.error = error.message;
+    jobs.set(id, current);
+  }
+}, 800);
   res.status(202).json({ jobId: id, status: job.status });
 });
 
