@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FlowForge AI — Video Studio</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#090a0f;color:#f5f5f7;font-family:Inter,Arial,sans-serif}
+.app{display:flex;min-height:100vh}.side{width:240px;border-right:1px solid #20222b;padding:22px 16px;background:#0d0e14}
+.logo{font-size:21px;font-weight:800;margin:5px 10px 28px}.logo span{color:#8b7cff}
+.nav button{width:100%;background:none;border:0;color:#a9acb8;text-align:left;padding:12px 13px;border-radius:10px;margin:2px 0;font-size:14px;cursor:pointer}.nav button.active,.nav button:hover{background:#191a23;color:white}
+.bottom{margin-top:auto;padding:12px;color:#777b88;font-size:12px}.main{flex:1;padding:28px 34px;max-width:1250px;margin:auto;width:100%}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}.top h1{font-size:28px;margin:0 0 5px}.muted{color:#8f93a1;font-size:13px}.credits{background:#171821;border:1px solid #292b36;padding:9px 13px;border-radius:10px;font-size:13px}
+.grid{display:grid;grid-template-columns:1.35fr .65fr;gap:18px}.card{background:#101118;border:1px solid #242630;border-radius:16px;padding:20px}.card h2{font-size:16px;margin:0 0 15px}
+textarea{width:100%;height:175px;background:#0a0b10;border:1px solid #30323d;border-radius:12px;color:white;padding:15px;resize:vertical;outline:none;font-size:14px;line-height:1.5}
+textarea:focus{border-color:#7165ff}.row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}.select{flex:1;min-width:120px;background:#181923;border:1px solid #2c2e39;color:#ddd;padding:11px;border-radius:9px}
+.generate{margin-top:15px;width:100%;border:0;border-radius:10px;padding:13px;background:#7165ff;color:white;font-weight:700;cursor:pointer}.generate:hover{background:#8176ff}
+.ratio{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.ratio button{padding:10px;background:#181923;border:1px solid #2b2d38;color:#aaa;border-radius:8px;cursor:pointer}.ratio button.sel{border-color:#7165ff;color:#fff;background:#211e45}
+.preview{height:250px;border-radius:12px;background:linear-gradient(135deg,#151622,#0b0c12);display:flex;align-items:center;justify-content:center;color:#666;margin-bottom:12px}.play{width:52px;height:52px;border-radius:50%;background:#7165ff;color:#fff;display:grid;place-items:center;font-size:20px}
+.timeline{margin-top:18px}.track{height:74px;background:#0b0c11;border:1px solid #252731;border-radius:10px;padding:9px;display:flex;gap:7px}.clip{min-width:120px;background:linear-gradient(135deg,#28243e,#171924);border:1px solid #393451;border-radius:7px;padding:9px;font-size:11px;color:#bfc1ca}.empty{color:#707380;font-size:12px;display:flex;align-items:center}
+@media(max-width:850px){.side{display:none}.main{padding:20px}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="side">
+  <div class="logo">Flow<span>Forge</span> AI</div>
+  <div class="nav">
+    <button class="active">✦ Create</button><button>▣ Projects</button><button>◈ Templates</button><button>◎ Assets</button>
+  </div>
+  <div class="bottom">AI Video Studio<br><br>Prototype v0.1</div>
+</aside>
+<main class="main">
+  <div class="top"><div><h1>Create video</h1><div class="muted">Turn an idea into cinematic scenes.</div></div><div class="credits">⚡ 100 credits</div></div>
+  <div class="grid">
+    <section class="card">
+      <h2>Prompt</h2>
+      <textarea id="prompt" placeholder="Describe your video...">A tiny cinematic bakery in a magical forest, miniature bakers preparing a glowing chocolate cake, ultra realistic macro photography, warm morning light.</textarea>
+      <div class="row">
+        <select class="select"><option>Video model — Auto</option><option>Fast</option><option>Cinematic</option></select>
+        <select class="select"><option>Duration — 10s</option><option>5s</option><option>15s</option><option>20s</option></select>
+      </div>
+      <div class="row">
+        <div style="width:100%;font-size:12px;color:#8f93a1;margin-bottom:2px">Aspect ratio</div>
+        <div class="ratio" style="width:100%"><button class="sel" onclick="ratio(this)">9:16</button><button onclick="ratio(this)">16:9</button><button onclick="ratio(this)">1:1</button></div>
+      </div>
+      <button class="generate" onclick="generate()">✦ Generate scene</button>
+    </section>
+    <section class="card">
+      <h2>Preview</h2>
+      <div class="preview"><div class="play">▶</div></div>
+      <div class="muted" id="status">Ready to generate.</div>
+    </section>
+  </div>
+  <section class="card timeline">
+    <h2>Storyboard / Timeline</h2>
+    <div class="track" id="track"><div class="empty">Your generated scenes will appear here.</div></div>
+  </section>
+</main>
+</div>
+<script>
+function ratio(el){document.querySelectorAll('.ratio button').forEach(b=>b.classList.remove('sel'));el.classList.add('sel')}
+function generate(){
+ const p=document.getElementById('prompt').value.trim(); if(!p)return;
+ const s=document.getElementById('status');s.textContent='Generating preview…';
+ setTimeout(()=>{s.textContent='Scene ready — connect an AI video API to generate the real clip.';
+ const t=document.getElementById('track'); if(t.querySelector('.empty'))t.innerHTML='';
+ const c=document.createElement('div');c.className='clip';c.textContent='Scene '+(t.children.length+1)+' • 10s';t.appendChild(c)},900)
+}
+</script>
+</body>
+</html>
