@@ -1,434 +1,459 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<meta name="viewport"
+content="width=device-width,initial-scale=1">
+
 <title>FlowForge AI Studio</title>
 
 <style>
-*{
-  box-sizing:border-box;
-}
 
 body{
-  margin:0;
-  background:#08090d;
-  color:#fff;
-  font-family:Arial,sans-serif;
+margin:0;
+background:#090a0f;
+color:#eee;
+font-family:Arial,sans-serif
+}
+
+*{
+box-sizing:border-box
 }
 
 .app{
-  min-height:100vh;
-  display:flex;
-  flex-direction:column;
+min-height:100vh;
+display:grid;
+grid-template-columns:200px 1fr 280px;
+grid-template-rows:1fr 160px
 }
 
-/* HEADER */
+.left,.right,.timeline{
+background:#0e1016;
+border-color:#252731
+}
 
-.header{
-  height:60px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:0 18px;
-  background:#101118;
-  border-bottom:1px solid #292b36;
+.left{
+grid-row:1/3;
+border-right:1px solid #252731;
+padding:15px
 }
 
 .logo{
-  font-size:21px;
-  font-weight:bold;
+font-size:19px;
+font-weight:bold;
+margin:8px
 }
 
-.logo span{
-  color:#806cff;
-}
-
-.ratioTop{
-  color:#aaa;
-  font-size:14px;
-}
-
-/* MAIN */
-
-.main{
-  flex:1;
-  display:grid;
-  grid-template-columns:200px 1fr 300px;
-  min-height:calc(100vh - 220px);
-}
-
-/* LEFT */
-
-.left{
-  background:#0e1016;
-  border-right:1px solid #292b36;
-  padding:15px;
+.logo b{
+color:#8175ff
 }
 
 .scene{
-  padding:12px;
-  margin-bottom:10px;
-  background:#211d3b;
-  border:1px solid #393260;
-  border-radius:9px;
-  font-size:13px;
+padding:10px;
+margin:4px 0;
+border-radius:8px;
+background:#211e3b;
+font-size:12px
+}
+
+.thumb{
+display:inline-block;
+width:42px;
+height:28px;
+background:#39325a;
+border-radius:5px;
+vertical-align:middle;
+margin-right:8px
+}
+
+.add,.field{
+background:#171923;
+border:1px solid #30323d;
+color:#ddd;
+border-radius:8px;
+padding:9px
 }
 
 .add{
-  width:100%;
-  padding:11px;
-  background:#171923;
-  color:#fff;
-  border:1px solid #343642;
-  border-radius:8px;
+width:100%;
+cursor:pointer
 }
-
-/* CENTER */
 
 .center{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  padding:20px;
+padding:15px;
+background:#090a0f
 }
 
-.videoBox{
-  width:min(330px,80vw);
-  aspect-ratio:9/16;
-  background:radial-gradient(circle,#443a63,#11131b);
-  border:1px solid #363747;
-  border-radius:16px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
-  box-shadow:0 15px 50px rgba(0,0,0,.5);
+.top{
+height:35px;
+display:flex;
+justify-content:space-between
 }
 
-.videoBox video{
-  width:100%;
-  height:100%;
-  object-fit:cover;
+.canvas{
+height:calc(100% - 40px);
+display:grid;
+place-items:center
+}
+
+.video{
+height:min(65vh,500px);
+aspect-ratio:9/16;
+background:radial-gradient(circle,#40375d,#11131b);
+border:1px solid #333;
+border-radius:12px;
+display:grid;
+place-items:center;
+overflow:hidden
+}
+
+.video img{
+width:100%;
+height:100%;
+object-fit:cover
+}
+
+.video video{
+width:100%;
+height:100%;
+object-fit:cover
 }
 
 .play{
-  width:65px;
-  height:65px;
-  border-radius:50%;
-  background:#7869ff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:25px;
+width:55px;
+height:55px;
+border-radius:50%;
+background:#766aff;
+display:grid;
+place-items:center
 }
-
-/* RIGHT */
 
 .right{
-  background:#0e1016;
-  border-left:1px solid #292b36;
-  padding:18px;
+border-left:1px solid #252731;
+padding:17px
 }
 
-.title{
-  font-size:18px;
-  font-weight:bold;
+.modes{
+display:flex;
+gap:6px;
+margin-top:12px
+}
+
+.mode{
+flex:1;
+padding:9px 5px;
+background:#171923;
+color:#aaa;
+border:1px solid #30323d;
+border-radius:8px;
+cursor:pointer;
+font-size:11px
+}
+
+.mode.active{
+background:#766aff;
+color:#fff;
+border-color:#766aff
+}
+
+.prompt{
+width:100%;
+height:130px;
+background:#090a0f;
+color:#fff;
+border:1px solid #30323d;
+border-radius:8px;
+padding:10px;
+margin-top:8px
+}
+
+.field{
+width:100%;
+margin-top:7px
 }
 
 .label{
-  display:block;
-  margin-top:16px;
-  margin-bottom:6px;
-  color:#999;
-  font-size:11px;
-}
-
-textarea,
-select{
-  width:100%;
-  background:#090a0f;
-  color:#fff;
-  border:1px solid #343642;
-  border-radius:9px;
-  padding:11px;
-}
-
-textarea{
-  height:150px;
-  resize:vertical;
-}
-
-select{
-  height:42px;
+font-size:10px;
+color:#888;
+margin-top:12px
 }
 
 .generate{
-  width:100%;
-  margin-top:18px;
-  padding:14px;
-  background:#7869ff;
-  color:#fff;
-  border:0;
-  border-radius:9px;
-  font-weight:bold;
-  font-size:15px;
+width:100%;
+margin-top:14px;
+padding:12px;
+background:#766aff;
+color:#fff;
+border:0;
+border-radius:8px;
+font-weight:bold;
+cursor:pointer
 }
 
 .generate:disabled{
-  opacity:.5;
+opacity:.6;
+cursor:wait
 }
 
 .status{
-  margin-top:10px;
-  color:#aaa;
-  font-size:11px;
-  line-height:1.5;
+font-size:10px;
+color:#aaa;
+margin-top:9px;
+line-height:1.5
 }
 
 .result{
-  margin-top:12px;
-  padding:10px;
-  background:#151720;
-  border:1px solid #30323d;
-  border-radius:8px;
-  font-size:12px;
-  word-break:break-word;
+margin-top:12px;
+padding:10px;
+background:#11131b;
+border:1px solid #30323d;
+border-radius:8px;
+font-size:11px;
+line-height:1.5;
+max-height:180px;
+overflow:auto
 }
 
-/* TIMELINE */
-
 .timeline{
-  height:160px;
-  background:#0e1016;
-  border-top:1px solid #292b36;
-  padding:12px 18px;
+grid-column:2/4;
+border-top:1px solid #252731;
+padding:12px
 }
 
 .track{
-  margin-top:8px;
-  height:105px;
-  background:#090a0f;
-  border:1px solid #292b36;
-  border-radius:9px;
-  padding:10px;
-  overflow-x:auto;
+height:110px;
+background:#090a0f;
+border:1px solid #252731;
+border-radius:8px;
+padding:8px
 }
 
 .clips{
-  display:flex;
-  gap:8px;
+display:flex;
+gap:7px;
+overflow-x:auto
 }
 
 .clip{
-  min-width:140px;
-  padding:12px;
-  background:#211d3b;
-  border:1px solid #41386b;
-  border-radius:8px;
-  font-size:11px;
+background:#211d36;
+border:1px solid #40386a;
+padding:9px;
+width:140px;
+border-radius:6px;
+font-size:10px;
+flex-shrink:0
 }
-
-/* MOBILE */
 
 @media(max-width:800px){
 
-  .main{
-    display:flex;
-    flex-direction:column;
-    min-height:auto;
-  }
-
-  .left{
-    display:none;
-  }
-
-  .right{
-    order:1;
-    border-left:0;
-    border-top:1px solid #292b36;
-    padding:16px;
-  }
-
-  .center{
-    order:0;
-    padding:20px 10px;
-    min-height:500px;
-  }
-
-  .videoBox{
-    width:min(300px,82vw);
-  }
-
-  .timeline{
-    height:140px;
-  }
-
-  .track{
-    height:85px;
-  }
+.left,.right{
+display:none
 }
+
+.app{
+display:block
+}
+
+.timeline{
+display:none
+}
+
+.center{
+height:100vh
+}
+
+}
+
 </style>
+
 </head>
 
 <body>
 
 <div class="app">
 
-<header class="header">
-  <div class="logo">
-    Flow<span>Forge</span> AI
-  </div>
-
-  <div class="ratioTop" id="ratioTop">
-    9:16
-  </div>
-</header>
-
-
-<div class="main">
-
-<!-- LEFT -->
-
 <aside class="left">
 
-  <div class="scene">
-    🎬 Scene 01 · 10s
-  </div>
+<div class="logo">
+Flow<b>Forge</b> AI
+</div>
 
-  <button class="add" onclick="addScene()">
-    ＋ Add Scene
-  </button>
+<div class="scene">
+<span class="thumb"></span>
+Scene 01 · 10s
+</div>
+
+<button class="add"
+onclick="addScene()">
+＋ Add Scene
+</button>
 
 </aside>
 
 
-<!-- CENTER -->
-
 <main class="center">
 
-  <div class="videoBox" id="videoBox">
+<div class="top">
 
-    <div class="play">
-      ▶
-    </div>
+<span>
+FlowForge AI Studio
+</span>
 
-  </div>
+<span id="ratioTop">
+9:16
+</span>
+
+</div>
+
+<div class="canvas">
+
+<div class="video"
+id="videoBox">
+
+<div class="play">
+▶
+</div>
+
+</div>
+
+</div>
 
 </main>
 
 
-<!-- RIGHT -->
-
 <aside class="right">
 
-  <div class="title">
-    ✦ AI Director
-  </div>
+<b>AI Director</b>
 
 
-  <label class="label">
-    PROMPT
-  </label>
+<div class="modes">
 
-  <textarea id="prompt">Create a short cinematic scene of a cute 3D cartoon bunny happily jumping in a colorful magical garden.</textarea>
+<button
+id="textMode"
+class="mode active"
+onclick="setMode('text')">
+✍️ TEXT
+</button>
 
+<button
+id="imageMode"
+class="mode"
+onclick="setMode('image')">
+🖼️ IMAGE
+</button>
 
-  <label class="label">
-    DURATION
-  </label>
-
-  <select id="duration">
-
-    <option value="5">
-      5 seconds
-    </option>
-
-    <option value="10" selected>
-      10 seconds
-    </option>
-
-    <option value="15">
-      15 seconds
-    </option>
-
-  </select>
-
-
-  <label class="label">
-    ASPECT RATIO
-  </label>
-
-  <select id="ratio" onchange="updateRatio()">
-
-    <option value="9:16" selected>
-      9:16
-    </option>
-
-    <option value="16:9">
-      16:9
-    </option>
-
-    <option value="1:1">
-      1:1
-    </option>
-
-  </select>
-
-
-  <button
-    class="generate"
-    id="generateBtn"
-    onclick="generate()">
-
-    ✦ Generate Scene
-
-  </button>
-
-
-  <div
-    class="status"
-    id="status">
-
-    Connecting to FlowForge backend...
-
-  </div>
-
-
-  <div
-    class="result"
-    id="result"
-    style="display:none">
-
-  </div>
-
-</aside>
+<button
+class="mode"
+onclick="alert('Video mode will be added next.')">
+🎬 VIDEO
+</button>
 
 </div>
 
 
-<!-- TIMELINE -->
+<div class="label">
+PROMPT
+</div>
+
+<textarea
+id="prompt"
+class="prompt">Create a cute 3D cartoon bunny happily jumping in a colorful magical garden.</textarea>
+
+
+<div class="label">
+DURATION
+</div>
+
+<select
+id="duration"
+class="field">
+
+<option value="10">
+10 seconds
+</option>
+
+<option value="5">
+5 seconds
+</option>
+
+<option value="15">
+15 seconds
+</option>
+
+</select>
+
+
+<div class="label">
+ASPECT RATIO
+</div>
+
+<select
+id="ratio"
+class="field"
+onchange="updateRatio()">
+
+<option value="9:16">
+9:16
+</option>
+
+<option value="16:9">
+16:9
+</option>
+
+<option value="1:1">
+1:1
+</option>
+
+</select>
+
+
+<button
+id="generateBtn"
+class="generate"
+onclick="generate()">
+
+✦ Generate Text
+
+</button>
+
+
+<div
+id="status"
+class="status">
+
+Backend: connecting...
+
+</div>
+
+
+<div
+id="result"
+class="result"
+style="display:none">
+</div>
+
+</aside>
+
 
 <section class="timeline">
 
-  <div>
-    🎬 Timeline
-  </div>
+<div>
+Timeline
+</div>
 
-  <div class="track">
+<div class="track">
 
-    <div
-      class="clips"
-      id="clips">
+<div
+class="clips"
+id="clips">
 
-      <div class="clip">
-        Scene 01 · 10s
-      </div>
+<div class="clip">
+Scene 01 · 10s
+</div>
 
-    </div>
+</div>
 
-  </div>
+</div>
 
 </section>
 
@@ -437,364 +462,523 @@ select{
 
 <script>
 
-/* BACKEND */
-
 const API =
-  "https://flowforge-backend-42rl.onrender.com";
+"https://flowforge-backend-42rl.onrender.com";
 
-let sceneNumber = 1;
+let n = 1;
+
+let mode = "text";
 
 
-/* BACKEND CHECK */
+/* MODE */
+
+function setMode(newMode){
+
+mode = newMode;
+
+document
+.getElementById("textMode")
+.classList.toggle(
+"active",
+mode === "text"
+);
+
+document
+.getElementById("imageMode")
+.classList.toggle(
+"active",
+mode === "image"
+);
+
+const button =
+document.getElementById(
+"generateBtn"
+);
+
+if(mode === "image"){
+
+button.textContent =
+"🖼️ Generate Image";
+
+}else{
+
+button.textContent =
+"✦ Generate Text";
+
+}
+
+}
+
+
+/* BACKEND */
 
 async function checkBackend(){
 
-  const status =
-    document.getElementById("status");
+const status =
+document.getElementById(
+"status"
+);
 
-  try{
+try{
 
-    const response =
-      await fetch(API + "/health");
+const response =
+await fetch(
+API + "/health"
+);
 
-    if(!response.ok){
+const data =
+await response.json();
 
-      throw new Error("Backend unavailable");
+if(data.ok){
 
-    }
+status.textContent =
+"Backend: online ✓";
 
-    const data =
-      await response.json();
+}else{
 
-    if(data.ok){
+status.textContent =
+"Backend: online";
 
-      status.textContent =
-        "Backend: ONLINE ✓";
+}
 
-    }else{
+}catch(error){
 
-      status.textContent =
-        "Backend: ONLINE";
+status.textContent =
+"Backend connection failed";
 
-    }
-
-  }catch(error){
-
-    status.textContent =
-      "Backend: connection failed";
-
-  }
+}
 
 }
 
 
-/* GENERATE */
+/* MAIN GENERATE */
 
 async function generate(){
 
-  const button =
-    document.getElementById("generateBtn");
+if(mode === "image"){
 
-  const status =
-    document.getElementById("status");
+return generateImage();
 
-  const result =
-    document.getElementById("result");
+}
 
-  const prompt =
-    document.getElementById("prompt")
-    .value
-    .trim();
-
-  const duration =
-    Number(
-      document.getElementById("duration")
-      .value
-    );
-
-  const aspectRatio =
-    document.getElementById("ratio")
-    .value;
-
-
-  if(!prompt){
-
-    status.textContent =
-      "Please enter a prompt.";
-
-    return;
-
-  }
-
-
-  button.disabled = true;
-
-  result.style.display =
-    "none";
-
-  status.textContent =
-    "Sending request...";
-
-
-  try{
-
-    const response =
-      await fetch(
-        API + "/api/generate",
-        {
-          method:"POST",
-
-          headers:{
-            "Content-Type":
-              "application/json"
-          },
-
-          body:JSON.stringify({
-
-            prompt:prompt,
-
-            duration:duration,
-
-            aspectRatio:aspectRatio
-
-          })
-
-        }
-      );
-
-
-    const data =
-      await response.json();
-
-
-    if(!response.ok){
-
-      throw new Error(
-        data.error ||
-        "Request failed"
-      );
-
-    }
-
-
-    status.textContent =
-      "Job created ✓ Processing...";
-
-
-    pollJob(data.jobId);
-
-
-  }catch(error){
-
-    status.textContent =
-      "Error: " + error.message;
-
-    button.disabled = false;
-
-  }
+return generateText();
 
 }
 
 
-/* CHECK JOB */
+/* TEXT */
 
-async function pollJob(jobId){
+async function generateText(){
 
-  const status =
-    document.getElementById("status");
+const status =
+document.getElementById(
+"status"
+);
 
-  const button =
-    document.getElementById("generateBtn");
+const result =
+document.getElementById(
+"result"
+);
 
-  const result =
-    document.getElementById("result");
+const button =
+document.getElementById(
+"generateBtn"
+);
 
+const prompt =
+document.getElementById(
+"prompt"
+).value.trim();
 
-  try{
+const duration =
+Number(
+document.getElementById(
+"duration"
+).value
+);
 
-    const response =
-      await fetch(
-        API +
-        "/api/generate/" +
-        jobId
-      );
-
-
-    const job =
-      await response.json();
-
-
-    if(job.status === "completed"){
-
-      status.textContent =
-        "Generation completed ✓";
-
-
-      if(job.generatedText){
-
-        result.style.display =
-          "block";
-
-        result.innerHTML =
-          "<b>AI Result</b><br><br>" +
-          escapeHtml(
-            job.generatedText
-          );
-
-      }
+const aspectRatio =
+document.getElementById(
+"ratio"
+).value;
 
 
-      if(job.videoUrl){
+if(!prompt){
 
-        showVideo(
-          job.videoUrl
-        );
+status.textContent =
+"Please enter a prompt.";
 
-      }
-
-
-      addGeneratedScene();
-
-      button.disabled =
-        false;
-
-      return;
-
-    }
-
-
-    if(job.status === "failed"){
-
-      status.textContent =
-        "Generation failed: " +
-        (job.error ||
-        "Unknown error");
-
-      button.disabled =
-        false;
-
-      return;
-
-    }
-
-
-    status.textContent =
-      "AI processing...";
-
-
-    setTimeout(
-      function(){
-
-        pollJob(jobId);
-
-      },
-      1500
-    );
-
-
-  }catch(error){
-
-    status.textContent =
-      "Checking job...";
-
-    setTimeout(
-      function(){
-
-        pollJob(jobId);
-
-      },
-      2500
-    );
-
-  }
+return;
 
 }
 
 
-/* SHOW VIDEO */
+button.disabled = true;
 
-function showVideo(url){
+result.style.display =
+"none";
 
-  const box =
-    document.getElementById(
-      "videoBox"
-    );
+status.textContent =
+"Sending request to FlowForge...";
 
-  box.innerHTML = "";
 
-  const video =
-    document.createElement(
-      "video"
-    );
+try{
 
-  video.src = url;
+const response =
+await fetch(
+API + "/api/generate",
+{
+method:"POST",
 
-  video.controls = true;
+headers:{
+"Content-Type":
+"application/json"
+},
 
-  video.playsInline = true;
+body:JSON.stringify({
+prompt,
+duration,
+aspectRatio
+})
+}
+);
 
-  box.appendChild(video);
+
+const data =
+await response.json();
+
+
+if(!response.ok){
+
+throw new Error(
+data.error ||
+"Generation failed"
+);
 
 }
 
 
-/* ADD GENERATED SCENE */
+status.textContent =
+"Text job created ✓";
 
-function addGeneratedScene(){
 
-  sceneNumber++;
+pollText(
+data.jobId
+);
 
-  const duration =
-    document.getElementById(
-      "duration"
-    ).value;
 
-  const clip =
-    document.createElement(
-      "div"
-    );
+}catch(error){
 
-  clip.className =
-    "clip";
+status.textContent =
+"Error: " +
+error.message;
 
-  clip.textContent =
-    "Scene " +
-    String(sceneNumber)
-    .padStart(2,"0") +
-    " · " +
-    duration +
-    "s";
+button.disabled =
+false;
 
-  document
-    .getElementById("clips")
-    .appendChild(clip);
+}
 
 }
 
 
-/* ADD EMPTY SCENE */
+/* TEXT POLL */
 
-function addScene(){
+async function pollText(jobId){
 
-  sceneNumber++;
+const status =
+document.getElementById(
+"status"
+);
 
-  const clip =
-    document.createElement(
-      "div"
-    );
+const result =
+document.getElementById(
+"result"
+);
 
-  clip.className =
-    "clip";
+try{
 
-  clip.textContent =
-    "Scene " +
-    String(sceneNumber)
-    .padStart(2,"0") +
-    " · 10s";
+const response =
+await fetch(
+API +
+"/api/generate/" +
+jobId
+);
 
-  document
-    .getElementById("clips")
-    .appendChild(clip);
+const job =
+await response.json();
+
+
+if(job.status === "completed"){
+
+status.textContent =
+"Generation completed ✓";
+
+
+if(job.generatedText){
+
+result.style.display =
+"block";
+
+result.innerHTML =
+"<b>AI Result</b><br><br>" +
+escapeHtml(
+job.generatedText
+);
+
+}
+
+addGeneratedScene();
+
+document
+.getElementById(
+"generateBtn"
+)
+.disabled = false;
+
+return;
+
+}
+
+
+if(job.status === "failed"){
+
+status.textContent =
+"Generation failed: " +
+(job.error || "Unknown error");
+
+document
+.getElementById(
+"generateBtn"
+)
+.disabled = false;
+
+return;
+
+}
+
+
+status.textContent =
+"AI processing...";
+
+setTimeout(
+() => pollText(jobId),
+1000
+);
+
+
+}catch(error){
+
+setTimeout(
+() => pollText(jobId),
+2000
+);
+
+}
+
+}
+
+
+/* IMAGE */
+
+async function generateImage(){
+
+const status =
+document.getElementById(
+"status"
+);
+
+const button =
+document.getElementById(
+"generateBtn"
+);
+
+const prompt =
+document.getElementById(
+"prompt"
+).value.trim();
+
+const aspectRatio =
+document.getElementById(
+"ratio"
+).value;
+
+
+if(!prompt){
+
+status.textContent =
+"Please enter a prompt.";
+
+return;
+
+}
+
+
+button.disabled = true;
+
+status.textContent =
+"Sending image request...";
+
+
+try{
+
+const response =
+await fetch(
+API + "/api/image",
+{
+method:"POST",
+
+headers:{
+"Content-Type":
+"application/json"
+},
+
+body:JSON.stringify({
+prompt,
+aspectRatio
+})
+}
+);
+
+
+const data =
+await response.json();
+
+
+if(!response.ok){
+
+throw new Error(
+data.error ||
+"Image request failed"
+);
+
+}
+
+
+status.textContent =
+"Image job created ✓";
+
+pollImage(
+data.jobId
+);
+
+
+}catch(error){
+
+status.textContent =
+"Image error: " +
+error.message;
+
+button.disabled =
+false;
+
+}
+
+}
+
+
+/* IMAGE POLL */
+
+async function pollImage(jobId){
+
+const status =
+document.getElementById(
+"status"
+);
+
+const button =
+document.getElementById(
+"generateBtn"
+);
+
+try{
+
+const response =
+await fetch(
+API +
+"/api/image/" +
+jobId
+);
+
+const job =
+await response.json();
+
+
+if(job.status === "completed"){
+
+status.textContent =
+"Image generation completed ✓";
+
+showImage(
+job.imageUrl
+);
+
+addGeneratedScene();
+
+button.disabled =
+false;
+
+return;
+
+}
+
+
+if(job.status === "failed"){
+
+status.textContent =
+"Image generation failed: " +
+(job.error || "Unknown error");
+
+button.disabled =
+false;
+
+return;
+
+}
+
+
+status.textContent =
+"Nano Banana generating image...";
+
+setTimeout(
+() => pollImage(jobId),
+1000
+);
+
+
+}catch(error){
+
+setTimeout(
+() => pollImage(jobId),
+2000
+);
+
+}
+
+}
+
+
+/* SHOW IMAGE */
+
+function showImage(url){
+
+const box =
+document.getElementById(
+"videoBox"
+);
+
+box.innerHTML = "";
+
+const img =
+document.createElement(
+"img"
+);
+
+img.src = url;
+
+img.alt =
+"Generated FlowForge image";
+
+box.appendChild(img);
 
 }
 
@@ -803,15 +987,66 @@ function addScene(){
 
 function updateRatio(){
 
-  const ratio =
-    document.getElementById(
-      "ratio"
-    ).value;
+document.getElementById(
+"ratioTop"
+).textContent =
+document.getElementById(
+"ratio"
+).value;
 
-  document.getElementById(
-    "ratioTop"
-  ).textContent =
-    ratio;
+}
+
+
+/* TIMELINE */
+
+function addGeneratedScene(){
+
+n++;
+
+const clip =
+document.createElement(
+"div"
+);
+
+clip.className =
+"clip";
+
+clip.textContent =
+"Scene " +
+String(n).padStart(2,"0") +
+" · Generated";
+
+document
+.getElementById(
+"clips"
+)
+.appendChild(clip);
+
+}
+
+
+function addScene(){
+
+n++;
+
+const clip =
+document.createElement(
+"div"
+);
+
+clip.className =
+"clip";
+
+clip.textContent =
+"Scene " +
+String(n).padStart(2,"0") +
+" · 10s";
+
+document
+.getElementById(
+"clips"
+)
+.appendChild(clip);
 
 }
 
@@ -820,20 +1055,26 @@ function updateRatio(){
 
 function escapeHtml(text){
 
-  return String(text)
-
-    .replace(/&/g,"&amp;")
-
-    .replace(/</g,"&lt;")
-
-    .replace(/>/g,"&gt;")
-
-    .replace(/\n/g,"<br>");
+return String(text)
+.replace(
+/&/g,
+"&amp;"
+)
+.replace(
+/</g,
+"&lt;"
+)
+.replace(
+/>/g,
+"&gt;"
+)
+.replace(
+/\n/g,
+"<br>"
+);
 
 }
 
-
-/* START */
 
 checkBackend();
 
