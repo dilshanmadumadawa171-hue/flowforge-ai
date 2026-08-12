@@ -6,7 +6,6 @@ const PORT = process.env.PORT || 10000;
 const API_KEY = process.env.GEMINI_API_KEY;
 
 const jobs = new Map();
-
 const indexPath = path.join(__dirname, "index.html");
 
 function send(res, status, data, type = "application/json") {
@@ -40,7 +39,7 @@ function readBody(req) {
     req.on("end", () => {
       try {
         resolve(body ? JSON.parse(body) : {});
-      } catch {
+      } catch (error) {
         reject(new Error("Invalid JSON"));
       }
     });
@@ -51,11 +50,13 @@ function readBody(req) {
 
 async function generateWithGemini(prompt) {
   if (!API_KEY) {
-    throw new Error("GEMINI_API_KEY is not configured in Render");
+    throw new Error(
+      "GEMINI_API_KEY is not configured in Render"
+    );
   }
 
   const response = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent"
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
     {
       method: "POST",
       headers: {
@@ -80,7 +81,8 @@ async function generateWithGemini(prompt) {
 
   if (!response.ok) {
     throw new Error(
-      data?.error?.message || "Gemini API request failed"
+      data?.error?.message ||
+      "Gemini API request failed"
     );
   }
 
@@ -97,6 +99,7 @@ function startJob(jobId, prompt) {
     if (!job) return;
 
     job.status = "processing";
+    jobs.set(jobId, job);
 
     try {
       const generatedText =
@@ -121,7 +124,6 @@ function startJob(jobId, prompt) {
 
 const server = http.createServer(async (req, res) => {
 
-  // CORS preflight
   if (req.method === "OPTIONS") {
     res.writeHead(204, {
       "Access-Control-Allow-Origin": "*",
@@ -132,11 +134,13 @@ const server = http.createServer(async (req, res) => {
     return res.end();
   }
 
-  // WEBSITE
+  // Website
   if (req.method === "GET" && req.url === "/") {
-
     try {
-      const html = fs.readFileSync(indexPath, "utf8");
+      const html = fs.readFileSync(
+        indexPath,
+        "utf8"
+      );
 
       return send(
         res,
@@ -146,7 +150,6 @@ const server = http.createServer(async (req, res) => {
       );
 
     } catch (error) {
-
       return send(
         res,
         500,
@@ -156,9 +159,8 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // HEALTH
+  // Health check
   if (req.method === "GET" && req.url === "/health") {
-
     return send(res, 200, {
       ok: true,
       service: "FlowForge AI Backend",
@@ -166,14 +168,12 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
-  // CREATE GENERATION JOB
+  // Generate
   if (
     req.method === "POST" &&
     req.url === "/api/generate"
   ) {
-
     try {
-
       const body = await readBody(req);
 
       const prompt =
@@ -203,7 +203,8 @@ const server = http.createServer(async (req, res) => {
         prompt,
         duration,
         aspectRatio,
-        createdAt: new Date().toISOString(),
+        createdAt:
+          new Date().toISOString(),
         videoUrl: null,
         generatedText: null
       });
@@ -217,19 +218,17 @@ const server = http.createServer(async (req, res) => {
       });
 
     } catch (error) {
-
       return send(res, 400, {
         error: error.message
       });
     }
   }
 
-  // GET JOB STATUS
+  // Job status
   if (
     req.method === "GET" &&
     req.url.startsWith("/api/generate/")
   ) {
-
     const id =
       req.url.split("/").pop();
 
@@ -244,7 +243,6 @@ const server = http.createServer(async (req, res) => {
     return send(res, 200, job);
   }
 
-  // 404
   return send(res, 404, {
     error: "Cannot GET " + req.url
   });
@@ -252,6 +250,6 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(
-    `FlowForge server running on port ${PORT}`
+    "FlowForge server running on port " + PORT
   );
 });
