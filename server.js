@@ -10,6 +10,11 @@ const imageJobs = new Map();
 
 const indexPath = path.join(__dirname, "index.html");
 
+
+/* =========================
+   RESPONSE HELPER
+========================= */
+
 function send(res, status, data, type = "application/json") {
   res.writeHead(status, {
     "Content-Type": type,
@@ -24,6 +29,11 @@ function send(res, status, data, type = "application/json") {
       : data
   );
 }
+
+
+/* =========================
+   READ REQUEST BODY
+========================= */
 
 function readBody(req) {
   return new Promise((resolve, reject) => {
@@ -53,6 +63,7 @@ function readBody(req) {
 
 /* =========================
    TEXT GENERATION
+   DO NOT CHANGE
 ========================= */
 
 async function generateWithGemini(prompt) {
@@ -104,6 +115,10 @@ async function generateWithGemini(prompt) {
 }
 
 
+/* =========================
+   START TEXT JOB
+========================= */
+
 function startTextJob(jobId, prompt) {
 
   setTimeout(async () => {
@@ -145,7 +160,7 @@ function startTextJob(jobId, prompt) {
 
 /* =========================
    IMAGE GENERATION
-   NANO BANANA / GEMINI IMAGE
+   IMAGEN 4 FAST
 ========================= */
 
 async function generateImage(
@@ -159,15 +174,36 @@ async function generateImage(
     );
   }
 
-  const ratio =
-    aspectRatio === "16:9"
-      ? "16:9"
-      : aspectRatio === "1:1"
-      ? "1:1"
-      : "9:16";
+
+  /* Supported aspect ratios */
+
+  let ratio = "9:16";
+
+  if (aspectRatio === "16:9") {
+    ratio = "16:9";
+  }
+
+  if (aspectRatio === "1:1") {
+    ratio = "1:1";
+  }
+
+  if (aspectRatio === "3:4") {
+    ratio = "3:4";
+  }
+
+  if (aspectRatio === "4:3") {
+    ratio = "4:3";
+  }
+
+
+  console.log(
+    "Generating Imagen 4 Fast image:",
+    ratio
+  );
+
 
   const response = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent",
+    "https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict",
     {
       method: "POST",
 
@@ -177,79 +213,94 @@ async function generateImage(
       },
 
       body: JSON.stringify({
-        contents: [
+
+        instances: [
           {
-            parts: [
-              {
-                text: prompt
-              }
-            ]
+            prompt: prompt
           }
         ],
 
-        generationConfig: {
-  responseModalities: [
-    "TEXT",
-    "IMAGE"
-  ]
-}
+        parameters: {
+          sampleCount: 1,
+          aspectRatio: ratio
+        }
+
       })
     }
   );
 
+
   const data = await response.json();
 
+
+  console.log(
+    "Imagen response status:",
+    response.status
+  );
+
+
   if (!response.ok) {
+
+    console.error(
+      "Imagen API error:",
+      JSON.stringify(data)
+    );
+
     throw new Error(
       data?.error?.message ||
-      "Image generation failed"
+      "Imagen image generation failed"
     );
   }
 
-  const parts =
-    data?.candidates?.[0]
-      ?.content?.parts || [];
 
-  const imagePart =
-    parts.find(
-      part =>
-        part.inlineData ||
-        part.inline_data
+  /* =========================
+     GET GENERATED IMAGE
+  ========================= */
+
+  const prediction =
+    data?.predictions?.[0];
+
+
+  if (!prediction) {
+
+    console.error(
+      "No prediction returned:",
+      JSON.stringify(data)
     );
 
-  if (!imagePart) {
     throw new Error(
-      "Image was not returned by Gemini"
+      "Imagen returned no prediction"
     );
   }
 
-  const imageData =
-    imagePart.inlineData ||
-    imagePart.inline_data;
-
-  const mimeType =
-    imageData.mimeType ||
-    imageData.mime_type ||
-    "image/png";
 
   const base64 =
-    imageData.data;
+    prediction.bytesBase64Encoded ||
+    prediction.bytes_base64_encoded;
+
 
   if (!base64) {
+
+    console.error(
+      "No image bytes returned:",
+      JSON.stringify(prediction)
+    );
+
     throw new Error(
-      "Image data is empty"
+      "Imagen returned no image data"
     );
   }
 
+
   return {
-    base64,
-    mimeType
+    base64: base64,
+    mimeType: "image/png"
   };
 }
 
 
 /* =========================
-   IMAGE JOB
+   START IMAGE JOB
 ========================= */
 
 async function startImageJob(
@@ -265,11 +316,14 @@ async function startImageJob(
 
     if (!job) return;
 
+
     job.status = "processing";
+
     job.message =
-      "Nano Banana is generating your image...";
+      "Imagen 4 Fast is generating your image...";
 
     imageJobs.set(jobId, job);
+
 
     try {
 
@@ -279,10 +333,12 @@ async function startImageJob(
           aspectRatio
         );
 
+
       job.status = "completed";
 
       job.message =
         "Image generation completed ✓";
+
 
       job.imageUrl =
         "data:" +
@@ -290,7 +346,9 @@ async function startImageJob(
         ";base64," +
         result.base64;
 
+
       imageJobs.set(jobId, job);
+
 
     } catch (error) {
 
@@ -299,8 +357,12 @@ async function startImageJob(
         error
       );
 
+
       job.status = "failed";
-      job.error = error.message;
+
+      job.error =
+        error.message;
+
 
       imageJobs.set(jobId, job);
     }
@@ -317,7 +379,10 @@ const server =
   http.createServer(
     async (req, res) => {
 
-      /* CORS */
+
+      /* =====================
+         CORS
+      ===================== */
 
       if (req.method === "OPTIONS") {
 
@@ -333,7 +398,9 @@ const server =
       }
 
 
-      /* WEBSITE */
+      /* =====================
+         WEBSITE
+      ===================== */
 
       if (
         req.method === "GET" &&
@@ -355,7 +422,7 @@ const server =
             "text/html; charset=utf-8"
           );
 
-        } catch {
+        } catch (error) {
 
           return send(
             res,
@@ -367,7 +434,9 @@ const server =
       }
 
 
-      /* HEALTH */
+      /* =====================
+         HEALTH
+      ===================== */
 
       if (
         req.method === "GET" &&
@@ -375,19 +444,28 @@ const server =
       ) {
 
         return send(res, 200, {
+
           ok: true,
+
           service:
             "FlowForge AI Backend",
+
           geminiConfigured:
             !!API_KEY,
+
+          textModel:
+            "gemini-3.6-flash",
+
           imageModel:
-            "gemini-3.1-flash-image"
+            "imagen-4.0-fast-generate-001"
+
         });
       }
 
 
       /* =====================
-         EXISTING TEXT API
+         TEXT CREATE
+         EXISTING SYSTEM
       ===================== */
 
       if (
@@ -400,21 +478,25 @@ const server =
           const body =
             await readBody(req);
 
+
           const prompt =
             String(
               body.prompt || ""
             ).trim();
+
 
           const duration =
             Number(
               body.duration || 10
             );
 
+
           const aspectRatio =
             String(
               body.aspectRatio ||
               "9:16"
             );
+
 
           if (!prompt) {
 
@@ -428,6 +510,7 @@ const server =
             );
           }
 
+
           const id =
             Date.now()
               .toString(36) +
@@ -435,22 +518,38 @@ const server =
               .toString(36)
               .slice(2, 8);
 
+
           jobs.set(id, {
+
             id,
-            status: "queued",
+
+            status:
+              "queued",
+
             prompt,
+
             duration,
+
             aspectRatio,
+
             createdAt:
-              new Date().toISOString(),
-            videoUrl: null,
-            generatedText: null
+              new Date()
+                .toISOString(),
+
+            videoUrl:
+              null,
+
+            generatedText:
+              null
+
           });
+
 
           startTextJob(
             id,
             prompt
           );
+
 
           return send(
             res,
@@ -461,6 +560,7 @@ const server =
               status: "queued"
             }
           );
+
 
         } catch (error) {
 
@@ -476,7 +576,9 @@ const server =
       }
 
 
-      /* EXISTING TEXT STATUS */
+      /* =====================
+         TEXT STATUS
+      ===================== */
 
       if (
         req.method === "GET" &&
@@ -490,8 +592,10 @@ const server =
             .split("/")
             .pop();
 
+
         const job =
           jobs.get(id);
+
 
         if (!job) {
 
@@ -504,6 +608,7 @@ const server =
             }
           );
         }
+
 
         return send(
           res,
@@ -527,16 +632,19 @@ const server =
           const body =
             await readBody(req);
 
+
           const prompt =
             String(
               body.prompt || ""
             ).trim();
+
 
           const aspectRatio =
             String(
               body.aspectRatio ||
               "9:16"
             );
+
 
           if (!prompt) {
 
@@ -550,6 +658,7 @@ const server =
             );
           }
 
+
           const id =
             Date.now()
               .toString(36) +
@@ -557,21 +666,34 @@ const server =
               .toString(36)
               .slice(2, 8);
 
+
           imageJobs.set(id, {
+
             id,
-            status: "queued",
+
+            status:
+              "queued",
+
             prompt,
+
             aspectRatio,
+
             createdAt:
-              new Date().toISOString(),
-            imageUrl: null
+              new Date()
+                .toISOString(),
+
+            imageUrl:
+              null
+
           });
+
 
           startImageJob(
             id,
             prompt,
             aspectRatio
           );
+
 
           return send(
             res,
@@ -582,6 +704,7 @@ const server =
               status: "queued"
             }
           );
+
 
         } catch (error) {
 
@@ -613,8 +736,10 @@ const server =
             .split("/")
             .pop();
 
+
         const job =
           imageJobs.get(id);
+
 
         if (!job) {
 
@@ -628,6 +753,7 @@ const server =
           );
         }
 
+
         return send(
           res,
           200,
@@ -636,7 +762,9 @@ const server =
       }
 
 
-      /* 404 */
+      /* =====================
+         404
+      ===================== */
 
       return send(
         res,
@@ -647,9 +775,14 @@ const server =
             req.url
         }
       );
+
     }
   );
 
+
+/* =========================
+   START SERVER
+========================= */
 
 server.listen(
   PORT,
