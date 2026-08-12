@@ -246,8 +246,35 @@ flex-shrink:0
 
 @media(max-width:800px){
 
-.left,.right{
+.left{
 display:none
+}
+
+.right{
+display:block;
+position:fixed;
+right:0;
+top:0;
+width:300px;
+height:100vh;
+overflow-y:auto;
+z-index:10;
+background:#0e1016;
+}
+
+.app{
+display:block
+}
+
+.timeline{
+display:none
+}
+
+.center{
+height:100vh;
+padding:15px
+}
+
 }
 
 .app{
