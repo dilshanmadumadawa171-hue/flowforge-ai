@@ -35,7 +35,7 @@ function send(res, status, data, type = "application/json") {
 
 
 /* =========================
-   BODY
+   READ BODY
 ========================= */
 
 function readBody(req) {
@@ -45,7 +45,7 @@ function readBody(req) {
     req.on("data", chunk => {
       body += chunk;
 
-      if (body.length > 10 * 1024 * 1024) {
+      if (body.length > 5 * 1024 * 1024) {
         reject(new Error("Request too large"));
         req.destroy();
       }
@@ -64,9 +64,9 @@ function readBody(req) {
 }
 
 
-/* =========================================================
-   TEXT — GEMINI
-========================================================= */
+/* =========================
+   GEMINI TEXT
+========================= */
 
 async function generateWithGemini(prompt) {
 
@@ -83,7 +83,7 @@ async function generateWithGemini(prompt) {
 
       headers: {
         "Content-Type": "application/json",
-        "x-goog-api-key": GEMINI_API_KEY
+        "x-goog-api-key": GEMINI_API_KEY.trim()
       },
 
       body: JSON.stringify({
@@ -105,7 +105,7 @@ async function generateWithGemini(prompt) {
   if (!response.ok) {
     throw new Error(
       data?.error?.message ||
-      "Gemini request failed"
+      "Gemini API request failed"
     );
   }
 
@@ -130,18 +130,18 @@ function startTextJob(jobId, prompt) {
 
     try {
 
-      const text =
+      const generatedText =
         await generateWithGemini(prompt);
 
       job.status = "completed";
-      job.generatedText = text;
+      job.generatedText = generatedText;
       job.videoUrl = null;
 
       jobs.set(jobId, job);
 
     } catch (error) {
 
-      console.error("TEXT ERROR:", error);
+      console.error("Gemini text error:", error);
 
       job.status = "failed";
       job.error = error.message;
@@ -153,47 +153,40 @@ function startTextJob(jobId, prompt) {
 }
 
 
-/* =========================================================
-   LUMA HELPERS
-========================================================= */
+/* =========================
+   LUMA AUTH
+========================= */
 
-function checkLuma() {
+function lumaHeaders() {
+
   if (!LUMA_API_KEY) {
     throw new Error(
       "LUMA_API_KEY is not configured in Render"
     );
   }
-}
 
-
-function lumaHeaders() {
   return {
     "accept": "application/json",
-    "authorization": `Bearer ${LUMA_API_KEY}`,
-    "content-type": "application/json"
+    "content-type": "application/json",
+    "authorization":
+      "Bearer " + LUMA_API_KEY.trim()
   };
 }
 
 
-function normalizeRatio(ratio) {
+/* =========================
+   LUMA IMAGE
+========================= */
 
-  if (ratio === "16:9") return "16:9";
-  if (ratio === "1:1") return "1:1";
-
-  return "9:16";
-}
-
-
-/* =========================================================
-   IMAGE — LUMA PHOTON
-========================================================= */
-
-async function createLumaImage(prompt, aspectRatio) {
-
-  checkLuma();
+async function createLumaImage(
+  prompt,
+  aspectRatio
+) {
 
   const ratio =
-    normalizeRatio(aspectRatio);
+    ["9:16", "16:9", "1:1"].includes(aspectRatio)
+      ? aspectRatio
+      : "9:16";
 
   const response = await fetch(
     "https://api.lumalabs.ai/dream-machine/v1/generations/image",
@@ -204,30 +197,27 @@ async function createLumaImage(prompt, aspectRatio) {
 
       body: JSON.stringify({
         prompt: prompt,
-
-        model: "photon-flash-1",
-
-        aspect_ratio: ratio,
-
-        format: "png"
+        model: "photon-1",
+        aspect_ratio: ratio
       })
     }
   );
 
   const data = await response.json();
 
-  console.log(
-    "LUMA IMAGE:",
-    JSON.stringify(data)
-  );
-
   if (!response.ok) {
 
     throw new Error(
-      data?.failure_reason ||
-      data?.detail ||
       data?.message ||
-      "Luma image generation failed"
+      data?.detail ||
+      data?.error ||
+      "Luma image request failed"
+    );
+  }
+
+  if (!data.id) {
+    throw new Error(
+      "Luma did not return an image generation ID"
     );
   }
 
@@ -235,22 +225,17 @@ async function createLumaImage(prompt, aspectRatio) {
 }
 
 
-/* =========================================================
-   IMAGE STATUS
-========================================================= */
+/* =========================
+   LUMA GENERATION STATUS
+========================= */
 
 async function getLumaGeneration(id) {
 
-  checkLuma();
-
   const response = await fetch(
-    `https://api.lumalabs.ai/dream-machine/v1/generations/${id}`,
+    "https://api.lumalabs.ai/dream-machine/v1/generations/" + id,
     {
       method: "GET",
-      headers: {
-        "accept": "application/json",
-        "authorization": `Bearer ${LUMA_API_KEY}`
-      }
+      headers: lumaHeaders()
     }
   );
 
@@ -259,10 +244,10 @@ async function getLumaGeneration(id) {
   if (!response.ok) {
 
     throw new Error(
-      data?.failure_reason ||
-      data?.detail ||
       data?.message ||
-      "Luma status request failed"
+      data?.detail ||
+      data?.error ||
+      "Could not check Luma generation"
     );
   }
 
@@ -270,9 +255,9 @@ async function getLumaGeneration(id) {
 }
 
 
-/* =========================================================
+/* =========================
    IMAGE JOB
-========================================================= */
+========================= */
 
 async function startImageJob(
   jobId,
@@ -280,361 +265,302 @@ async function startImageJob(
   aspectRatio
 ) {
 
-  setTimeout(async () => {
-
-    const job =
-      imageJobs.get(jobId);
-
-    if (!job) return;
-
-    try {
-
-      job.status = "processing";
-      job.message =
-        "Generating image...";
-
-      imageJobs.set(jobId, job);
-
-
-      const generation =
-        await createLumaImage(
-          prompt,
-          aspectRatio
-        );
-
-
-      job.lumaId =
-        generation.id;
-
-      imageJobs.set(jobId, job);
-
-
-      await pollImageJob(jobId);
-
-
-    } catch (error) {
-
-      console.error(
-        "IMAGE ERROR:",
-        error
-      );
-
-      job.status = "failed";
-      job.error = error.message;
-
-      imageJobs.set(jobId, job);
-    }
-
-  }, 200);
-}
-
-
-async function pollImageJob(jobId) {
-
-  const job =
-    imageJobs.get(jobId);
+  const job = imageJobs.get(jobId);
 
   if (!job) return;
 
-
   try {
 
-    const data =
-      await getLumaGeneration(
-        job.lumaId
-      );
-
-
-    if (data.state === "completed") {
-
-      const imageUrl =
-        data?.assets?.image;
-
-      if (!imageUrl) {
-        throw new Error(
-          "Luma completed but returned no image URL"
-        );
-      }
-
-      job.status = "completed";
-
-      job.message =
-        "Image generation completed ✓";
-
-      job.imageUrl =
-        imageUrl;
-
-      imageJobs.set(
-        jobId,
-        job
-      );
-
-      return;
-    }
-
-
-    if (data.state === "failed") {
-
-      job.status = "failed";
-
-      job.error =
-        data.failure_reason ||
-        "Luma image generation failed";
-
-      imageJobs.set(
-        jobId,
-        job
-      );
-
-      return;
-    }
-
-
     job.status = "processing";
+    job.message = "Luma is generating your image...";
 
-    job.message =
-      "AI is creating your image...";
+    imageJobs.set(jobId, job);
 
-    imageJobs.set(
-      jobId,
-      job
-    );
+    const generation =
+      await createLumaImage(
+        prompt,
+        aspectRatio
+      );
 
+    job.lumaId = generation.id;
 
-    setTimeout(
-      () => pollImageJob(jobId),
-      2000
-    );
+    imageJobs.set(jobId, job);
 
+    await pollImage(jobId);
 
   } catch (error) {
 
     console.error(
-      "IMAGE POLL ERROR:",
+      "Luma image error:",
       error
     );
 
     job.status = "failed";
     job.error = error.message;
 
-    imageJobs.set(
-      jobId,
-      job
-    );
+    imageJobs.set(jobId, job);
   }
 }
 
 
-/* =========================================================
-   VIDEO — LUMA RAY
-========================================================= */
+async function pollImage(jobId) {
+
+  const job = imageJobs.get(jobId);
+
+  if (!job) return;
+
+  try {
+
+    const generation =
+      await getLumaGeneration(
+        job.lumaId
+      );
+
+    const state =
+      generation.state ||
+      generation.status;
+
+    if (state === "completed") {
+
+      const imageUrl =
+        generation?.assets?.image ||
+        generation?.asset?.image;
+
+      if (!imageUrl) {
+        throw new Error(
+          "Luma completed the image but did not return an image URL"
+        );
+      }
+
+      job.status = "completed";
+      job.message =
+        "Image generation completed ✓";
+      job.imageUrl = imageUrl;
+
+      imageJobs.set(jobId, job);
+
+      return;
+    }
+
+
+    if (
+      state === "failed" ||
+      state === "error"
+    ) {
+
+      job.status = "failed";
+
+      job.error =
+        generation.failure_reason ||
+        generation.error ||
+        "Luma image generation failed";
+
+      imageJobs.set(jobId, job);
+
+      return;
+    }
+
+
+    job.status = "processing";
+    job.message =
+      "Luma is generating your image...";
+
+    imageJobs.set(jobId, job);
+
+    setTimeout(
+      () => pollImage(jobId),
+      2500
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Image polling error:",
+      error
+    );
+
+    job.status = "failed";
+    job.error = error.message;
+
+    imageJobs.set(jobId, job);
+  }
+}
+
+
+/* =========================
+   LUMA VIDEO
+========================= */
 
 async function createLumaVideo(
   prompt,
   aspectRatio,
-  imageUrl = null
+  duration
 ) {
 
-  checkLuma();
-
   const ratio =
-    normalizeRatio(aspectRatio);
+    [
+      "9:16",
+      "16:9",
+      "1:1"
+    ].includes(aspectRatio)
+      ? aspectRatio
+      : "9:16";
 
-  const body = {
-
-    prompt: prompt,
-
-    model: "ray-flash-2",
-
-    aspect_ratio: ratio,
-
-    duration: "5s"
-
-  };
-
-
-  /* Image → Video */
-
-  if (imageUrl) {
-
-    body.keyframes = {
-
-      frame0: {
-        type: "image",
-        url: imageUrl
-      }
-
-    };
-  }
+  const safeDuration =
+    Number(duration) === 5
+      ? "5s"
+      : "5s";
 
 
   const response = await fetch(
-    "https://api.lumalabs.ai/dream-machine/v1/generations",
+    "https://api.lumalabs.ai/dream-machine/v1/generations/video",
     {
       method: "POST",
 
       headers: lumaHeaders(),
 
-      body: JSON.stringify(body)
+      body: JSON.stringify({
+        generation_type: "video",
+        prompt: prompt,
+        model: "ray-flash-2",
+        aspect_ratio: ratio,
+        duration: safeDuration,
+        resolution: "720p"
+      })
     }
   );
 
-
-  const data =
-    await response.json();
-
-
-  console.log(
-    "LUMA VIDEO:",
-    JSON.stringify(data)
-  );
-
+  const data = await response.json();
 
   if (!response.ok) {
 
     throw new Error(
-      data?.failure_reason ||
-      data?.detail ||
       data?.message ||
-      "Luma video generation failed"
+      data?.detail ||
+      data?.error ||
+      "Luma video request failed"
     );
   }
 
+  if (!data.id) {
+
+    throw new Error(
+      "Luma did not return a video generation ID"
+    );
+  }
 
   return data;
 }
 
 
-/* =========================================================
+/* =========================
    VIDEO JOB
-========================================================= */
+========================= */
 
 async function startVideoJob(
   jobId,
   prompt,
   aspectRatio,
-  imageUrl
+  duration
 ) {
 
-  setTimeout(async () => {
-
-    const job =
-      videoJobs.get(jobId);
-
-    if (!job) return;
-
-
-    try {
-
-      job.status = "processing";
-
-      job.message =
-        "Generating video...";
-
-      videoJobs.set(
-        jobId,
-        job
-      );
-
-
-      const generation =
-        await createLumaVideo(
-          prompt,
-          aspectRatio,
-          imageUrl
-        );
-
-
-      job.lumaId =
-        generation.id;
-
-      videoJobs.set(
-        jobId,
-        job
-      );
-
-
-      await pollVideoJob(jobId);
-
-
-    } catch (error) {
-
-      console.error(
-        "VIDEO ERROR:",
-        error
-      );
-
-      job.status = "failed";
-      job.error = error.message;
-
-      videoJobs.set(
-        jobId,
-        job
-      );
-    }
-
-  }, 200);
-}
-
-
-async function pollVideoJob(jobId) {
-
-  const job =
-    videoJobs.get(jobId);
+  const job = videoJobs.get(jobId);
 
   if (!job) return;
 
+  try {
+
+    job.status = "processing";
+    job.message =
+      "Luma is generating your video...";
+
+    videoJobs.set(jobId, job);
+
+    const generation =
+      await createLumaVideo(
+        prompt,
+        aspectRatio,
+        duration
+      );
+
+    job.lumaId = generation.id;
+
+    videoJobs.set(jobId, job);
+
+    await pollVideo(jobId);
+
+  } catch (error) {
+
+    console.error(
+      "Luma video error:",
+      error
+    );
+
+    job.status = "failed";
+    job.error = error.message;
+
+    videoJobs.set(jobId, job);
+  }
+}
+
+
+async function pollVideo(jobId) {
+
+  const job = videoJobs.get(jobId);
+
+  if (!job) return;
 
   try {
 
-    const data =
+    const generation =
       await getLumaGeneration(
         job.lumaId
       );
 
+    const state =
+      generation.state ||
+      generation.status;
 
-    if (data.state === "completed") {
+
+    if (state === "completed") {
 
       const videoUrl =
-        data?.assets?.video;
+        generation?.assets?.video ||
+        generation?.asset?.video;
 
       if (!videoUrl) {
 
         throw new Error(
-          "Luma completed but returned no video URL"
+          "Luma completed the video but did not return a video URL"
         );
       }
-
 
       job.status = "completed";
 
       job.message =
         "Video generation completed ✓";
 
-      job.videoUrl =
-        videoUrl;
+      job.videoUrl = videoUrl;
 
-      videoJobs.set(
-        jobId,
-        job
-      );
+      videoJobs.set(jobId, job);
 
       return;
     }
 
 
-    if (data.state === "failed") {
+    if (
+      state === "failed" ||
+      state === "error"
+    ) {
 
       job.status = "failed";
 
       job.error =
-        data.failure_reason ||
+        generation.failure_reason ||
+        generation.error ||
         "Luma video generation failed";
 
-      videoJobs.set(
-        jobId,
-        job
-      );
+      videoJobs.set(jobId, job);
 
       return;
     }
@@ -643,41 +569,33 @@ async function pollVideoJob(jobId) {
     job.status = "processing";
 
     job.message =
-      "AI is creating your video...";
+      "Luma is generating your video...";
 
-    videoJobs.set(
-      jobId,
-      job
-    );
-
+    videoJobs.set(jobId, job);
 
     setTimeout(
-      () => pollVideoJob(jobId),
+      () => pollVideo(jobId),
       3000
     );
-
 
   } catch (error) {
 
     console.error(
-      "VIDEO POLL ERROR:",
+      "Video polling error:",
       error
     );
 
     job.status = "failed";
     job.error = error.message;
 
-    videoJobs.set(
-      jobId,
-      job
-    );
+    videoJobs.set(jobId, job);
   }
 }
 
 
-/* =========================================================
+/* =========================
    SERVER
-========================================================= */
+========================= */
 
 const server =
   http.createServer(
@@ -722,7 +640,7 @@ const server =
             "text/html; charset=utf-8"
           );
 
-        } catch {
+        } catch (error) {
 
           return send(
             res,
@@ -741,37 +659,31 @@ const server =
         req.url === "/health"
       ) {
 
-        return send(
-          res,
-          200,
-          {
-            ok: true,
+        return send(res, 200, {
 
-            service:
-              "FlowForge AI Backend",
+          ok: true,
 
-            geminiConfigured:
-              !!GEMINI_API_KEY,
+          service:
+            "FlowForge AI Backend",
 
-            lumaConfigured:
-              !!LUMA_API_KEY,
+          geminiConfigured:
+            !!GEMINI_API_KEY,
 
-            text:
-              "Gemini 3.6 Flash",
+          lumaConfigured:
+            !!LUMA_API_KEY,
 
-            image:
-              "Luma Photon Flash",
+          imageModel:
+            "photon-1",
 
-            video:
-              "Luma Ray Flash 2"
-          }
-        );
+          videoModel:
+            "ray-flash-2"
+        });
       }
 
 
-      /* =================================================
-         TEXT
-      ================================================= */
+      /* =====================
+         TEXT GENERATE
+      ===================== */
 
       if (
         req.method === "POST" &&
@@ -821,20 +733,28 @@ const server =
               .slice(2, 8);
 
 
-          jobs.set(
+          jobs.set(id, {
+
             id,
-            {
-              id,
-              status: "queued",
-              prompt,
-              duration,
-              aspectRatio,
-              createdAt:
-                new Date()
-                  .toISOString(),
-              generatedText: null
-            }
-          );
+
+            status:
+              "queued",
+
+            prompt,
+
+            duration,
+
+            aspectRatio,
+
+            createdAt:
+              new Date().toISOString(),
+
+            videoUrl:
+              null,
+
+            generatedText:
+              null
+          });
 
 
           startTextJob(
@@ -852,7 +772,6 @@ const server =
               status: "queued"
             }
           );
-
 
         } catch (error) {
 
@@ -885,6 +804,7 @@ const server =
         const job =
           jobs.get(id);
 
+
         if (!job) {
 
           return send(
@@ -897,6 +817,7 @@ const server =
           );
         }
 
+
         return send(
           res,
           200,
@@ -905,9 +826,9 @@ const server =
       }
 
 
-      /* =================================================
+      /* =====================
          IMAGE CREATE
-      ================================================= */
+      ===================== */
 
       if (
         req.method === "POST" &&
@@ -944,6 +865,19 @@ const server =
           }
 
 
+          if (!LUMA_API_KEY) {
+
+            return send(
+              res,
+              500,
+              {
+                error:
+                  "LUMA_API_KEY is not configured in Render"
+              }
+            );
+          }
+
+
           const id =
             Date.now()
               .toString(36) +
@@ -952,19 +886,23 @@ const server =
               .slice(2, 8);
 
 
-          imageJobs.set(
+          imageJobs.set(id, {
+
             id,
-            {
-              id,
-              status: "queued",
-              prompt,
-              aspectRatio,
-              createdAt:
-                new Date()
-                  .toISOString(),
-              imageUrl: null
-            }
-          );
+
+            status:
+              "queued",
+
+            prompt,
+
+            aspectRatio,
+
+            createdAt:
+              new Date().toISOString(),
+
+            imageUrl:
+              null
+          });
 
 
           startImageJob(
@@ -983,7 +921,6 @@ const server =
               status: "queued"
             }
           );
-
 
         } catch (error) {
 
@@ -1038,9 +975,9 @@ const server =
       }
 
 
-      /* =================================================
+      /* =====================
          VIDEO CREATE
-      ================================================= */
+      ===================== */
 
       if (
         req.method === "POST" &&
@@ -1052,24 +989,21 @@ const server =
           const body =
             await readBody(req);
 
-
           const prompt =
             String(
               body.prompt || ""
             ).trim();
 
+          const duration =
+            Number(
+              body.duration || 5
+            );
 
           const aspectRatio =
             String(
               body.aspectRatio ||
               "9:16"
             );
-
-
-          const imageUrl =
-            body.imageUrl
-              ? String(body.imageUrl)
-              : null;
 
 
           if (!prompt) {
@@ -1085,6 +1019,19 @@ const server =
           }
 
 
+          if (!LUMA_API_KEY) {
+
+            return send(
+              res,
+              500,
+              {
+                error:
+                  "LUMA_API_KEY is not configured in Render"
+              }
+            );
+          }
+
+
           const id =
             Date.now()
               .toString(36) +
@@ -1093,27 +1040,32 @@ const server =
               .slice(2, 8);
 
 
-          videoJobs.set(
+          videoJobs.set(id, {
+
             id,
-            {
-              id,
-              status: "queued",
-              prompt,
-              aspectRatio,
-              imageUrl,
-              createdAt:
-                new Date()
-                  .toISOString(),
-              videoUrl: null
-            }
-          );
+
+            status:
+              "queued",
+
+            prompt,
+
+            duration,
+
+            aspectRatio,
+
+            createdAt:
+              new Date().toISOString(),
+
+            videoUrl:
+              null
+          });
 
 
           startVideoJob(
             id,
             prompt,
             aspectRatio,
-            imageUrl
+            duration
           );
 
 
@@ -1126,7 +1078,6 @@ const server =
               status: "queued"
             }
           );
-
 
         } catch (error) {
 
@@ -1155,7 +1106,6 @@ const server =
           req.url
             .split("/")
             .pop();
-
 
         const job =
           videoJobs.get(id);
@@ -1193,13 +1143,14 @@ const server =
             req.url
         }
       );
+
     }
   );
 
 
-/* =========================================================
+/* =========================
    START
-========================================================= */
+========================= */
 
 server.listen(
   PORT,
@@ -1207,17 +1158,17 @@ server.listen(
   () => {
 
     console.log(
-      "FlowForge AI server running on port " +
+      "FlowForge server running on port " +
       PORT
     );
 
     console.log(
-      "Gemini:",
+      "Gemini configured:",
       !!GEMINI_API_KEY
     );
 
     console.log(
-      "Luma:",
+      "Luma configured:",
       !!LUMA_API_KEY
     );
   }
