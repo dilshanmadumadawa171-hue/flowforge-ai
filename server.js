@@ -188,18 +188,11 @@ async function generateImage(
         ],
 
         generationConfig: {
-          responseModalities: [
-            "TEXT",
-            "IMAGE"
-          ],
-
-          responseFormat: {
-            image: {
-              aspectRatio: ratio,
-              imageSize: "1K"
-            }
-          }
-        }
+  responseModalities: [
+    "TEXT",
+    "IMAGE"
+  ]
+}
       })
     }
   );
